@@ -1,28 +1,38 @@
-from app.database import get_db
+# app/__init__.py
+import sqlite3
+from flask import g
+
+DATABASE = '/Code/SDGKU/task_mgr/main.db'
+
+
+def get_db():
+    if 'db' not in g:
+        g.db = sqlite3.connect(DATABASE)
+    return g.db
 
 def output_formatter(results):
     out = []
     for result in results:
         res = {
-            "id":result[0],
-            "name":result[1],
-            "summary":result[2],
-            "description":result[3],
-            "is_done":result[4]
+            "id": result[0],
+            "name": result[1],
+            "summary": result[2],
+            "description": result[3],
+            "is_done": result[4]
         }
         out.append(res)
     return out
 
 def scan():
     conn = get_db()
-    cursor = conn.execute("SELECT * FROM task WHERE id=?",(task_id))
+    cursor = conn.execute("SELECT * FROM task")
     results = cursor.fetchall()
     cursor.close()
     return output_formatter(results)
 
-def select_by_id():
+def select_by_id(task_id):
     conn = get_db()
-    cursor = conn.execute("SELECT * FROM task WHERE id=?",(task_id))
+    cursor = conn.execute("SELECT * FROM task WHERE id=?", (task_id,))
     results = cursor.fetchall()
     cursor.close()
     if results:
@@ -35,4 +45,38 @@ def insert(task_data):
         task_data.get("summary"),
         task_data.get("description")
     )
-    statement = }
+    statement = """
+        INSERT INTO task (
+        name,
+        summary,
+        description
+        ) VALUES (?,?,?)
+    """
+    conn = get_db()
+    conn.execute(statement, task_tuple)
+    conn.commit()
+
+def update_by_id(task_data, task_id):
+    task_tuple = (
+        task_data.get("name"),
+        task_data.get("summary"),
+        task_data.get("description"),
+        task_data.get("is_done"),
+        task_id
+    )
+    statement = """
+        UPDATE task SET
+            name = ?,
+            summary = ?,
+            description = ?,
+            is_done = ?
+        WHERE id = ?
+    """
+    conn = get_db()
+    conn.execute(statement, task_tuple)
+    conn.commit()
+    
+def delete_by_id(task_id):
+    conn = get_db()
+    conn.execute("DELETE FROM task WHERE id=?", (task_id,))
+    conn.commit()
